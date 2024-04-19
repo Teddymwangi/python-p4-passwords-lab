@@ -1,43 +1,25 @@
-#!/usr/bin/env python3
-
-from flask import request, session
-from flask_restful import Resource
-
-from config import app, db, api
+from flask import Flask, jsonify, request, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
 from models import User
+from config import app_config
 
-class ClearSession(Resource):
+app = Flask(__name__)
+app.config.from_object(app_config['development'])
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
-    def delete(self):
-    
-        session['page_views'] = None
-        session['user_id'] = None
+# Import resources
+from resources.signup import Signup
+from resources.login import Login
+from resources.logout import Logout
+from resources.check_session import CheckSession
 
-        return {}, 204
-
-class Signup(Resource):
-    
-    def post(self):
-        json = request.get_json()
-        user = User(
-            username=json['username']
-        )
-        user.password_hash = json['password']
-        db.session.add(user)
-        db.session.commit()
-        return user.to_dict(), 201
-
-class CheckSession(Resource):
-    pass
-
-class Login(Resource):
-    pass
-
-class Logout(Resource):
-    pass
-
-api.add_resource(ClearSession, '/clear', endpoint='clear')
-api.add_resource(Signup, '/signup', endpoint='signup')
+# Register resources
+app.add_url_rule('/signup', view_func=Signup.as_view('signup'))
+app.add_url_rule('/login', view_func=Login.as_view('login'))
+app.add_url_rule('/logout', view_func=Logout.as_view('logout'))
+app.add_url_rule('/check_session', view_func=CheckSession.as_view('check_session'))
 
 if __name__ == '__main__':
-    app.run(port=5555, debug=True)
+    app.run(debug=True)
